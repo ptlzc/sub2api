@@ -16,8 +16,6 @@ permissions:
   packages: write
 
 env:
-  ALIYUN_REGISTRY: registry.cn-hangzhou.aliyuncs.com
-  ALIYUN_NAMESPACE: ptlzc
   IMAGE_NAME: sub2api
 
 jobs:
@@ -33,7 +31,7 @@ jobs:
       - name: Login to Aliyun Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.ALIYUN_REGISTRY }}
+          registry: ${{ secrets.REGISTRY_URL }}
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
 
@@ -42,7 +40,7 @@ jobs:
         run: |
           SHORT_SHA=$(git rev-parse --short=12 HEAD)
           FULL_SHA=$(git rev-parse HEAD)
-          IMAGE="${{ env.ALIYUN_REGISTRY }}/${{ env.ALIYUN_NAMESPACE }}/${{ env.IMAGE_NAME }}"
+          IMAGE="${{ secrets.REGISTRY_URL }}/${{ secrets.REGISTRY_NAMESPACE }}/${{ env.IMAGE_NAME }}"
           echo "image=${IMAGE}" >> $GITHUB_OUTPUT
           echo "sha_tag=sha-${SHORT_SHA}" >> $GITHUB_OUTPUT
           echo "full_sha=${FULL_SHA}" >> $GITHUB_OUTPUT
