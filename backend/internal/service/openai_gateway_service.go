@@ -3910,6 +3910,14 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 			s.parseSSEUsageBytes(dataBytes, usage)
 		}
 
+		// Defensive dedup: some upstream models (e.g. glm-5.2 native Responses
+		// API) occasionally duplicate the arguments string in
+		// function_call_arguments.done events, producing X+X payloads that break
+		// strict clients like Codex CLI with "trailing characters" JSON errors.
+		if dedupedLine, deduped := dedupResponsesSSEArgumentsLine(line); deduped {
+			line = dedupedLine
+		}
+
 		if !clientDisconnected {
 			if !clientOutputStarted && !lineStartsClientOutput {
 				pendingLines = append(pendingLines, line)
@@ -4023,6 +4031,10 @@ func (s *OpenAIGatewayService) handleNonStreamingResponsePassthrough(
 	if originalModel != "" && mappedModel != "" && originalModel != mappedModel {
 		body = s.replaceModelInResponseBody(body, mappedModel, originalModel)
 	}
+	// Defensive dedup for duplicated arguments in non-streaming response bodies.
+	if deduped, changed := dedupResponsesBodyArguments(body); changed {
+		body = deduped
+	}
 	c.Data(resp.StatusCode, contentType, body)
 	return &openaiNonStreamingResultPassthrough{
 		OpenAIUsage:      usage,
@@ -4061,6 +4073,10 @@ func (s *OpenAIGatewayService) handlePassthroughSSEToJSON(resp *http.Response, c
 		}
 		// Correct tool calls in final response
 		body = s.correctToolCallsInResponseBody(body)
+		// Defensive dedup for duplicated arguments in reconstructed response.
+		if deduped, changed := dedupResponsesBodyArguments(body); changed {
+			body = deduped
+		}
 	} else {
 		terminalType, terminalPayload, terminalOK := extractOpenAISSETerminalEvent(bodyText)
 		if terminalOK && terminalType == "response.failed" {
