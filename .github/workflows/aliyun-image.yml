@@ -59,8 +59,8 @@ jobs:
             VERSION=${{ steps.tags.outputs.sha_tag }}
             COMMIT=${{ steps.tags.outputs.full_sha }}
           platforms: linux/amd64
-          cache-from: type=registry,ref=${{ steps.tags.outputs.image }}:buildcache
-          cache-to: type=registry,ref=${{ steps.tags.outputs.image }}:buildcache,mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Output image reference
         run: |
