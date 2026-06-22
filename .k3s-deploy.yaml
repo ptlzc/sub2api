@@ -1,0 +1,31 @@
+apiVersion: platform.ptlzc.com/v1
+kind: K3sAppDeployConfig
+cluster: txyun
+project: sub2api
+environment: prod
+namespace: sub2api
+sourceRepo: ptlzc/sub2api
+imageRegistry: registry.cn-hangzhou.aliyuncs.com/ptlzc/sub2api
+imageTagPolicy: sha-<git-sha>
+gitOpsRepo: ptlzc/k3s-apps
+gitOpsPath: apps/sub2api/overlays/prod
+gitOpsAppManifest: gitops/root/apps/36-sub2api.yaml
+exposure:
+  - gatewayId: tailnet-home-k3s-worker
+    hostname: sub2api.in.ptlzc.com
+runtimeSecrets:
+  provider: vault
+  serviceAccount: sub2api
+  vaultPath: projects/sub2api/sub2api/env
+  destinationSecret: sub2api-env
+  requiredKeys:
+    - POSTGRES_PASSWORD
+bootstrapDependencies:
+  - postgres:5432
+  - redis:6379
+  waitGate: command
+notes: |
+  Fork of Wei-Shaw/sub2api with defensive dedup for duplicated arguments
+  in Responses passthrough (fixes Codex CLI "trailing characters" tool
+  call failures). Image is built and pushed to Aliyun ACR by
+  .github/workflows/aliyun-image.yml on every push to main.
